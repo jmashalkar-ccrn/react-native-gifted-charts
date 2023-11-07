@@ -10,6 +10,7 @@ import {
 } from '../utils/types';
 
 export type LineChartPropsType = {
+  defaultPointX?:number;
   height?: number;
   overflowTop?: number;
   overflowBottom?: number;
