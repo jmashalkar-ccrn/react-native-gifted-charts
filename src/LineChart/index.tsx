@@ -14,7 +14,6 @@ import {
   Dimensions,
   Platform,
   ColorValue,
-  I18nManager,
 } from 'react-native';
 import {styles} from './styles';
 import Svg, {
@@ -65,7 +64,7 @@ export const LineChart = (props: LineChartPropsType) => {
   const [arrow5Points, setArrow5Points] = useState('');
   const [secondaryArrowPoints, setSecondaryArrowPoints] = useState('');
   const [pointerIndex, setPointerIndex] = useState(-1);
-  const [pointerX, setPointerX] = useState(0);
+  const [pointerX, setPointerX] = useState(props.defaultPointX);
   const [pointerY, setPointerY] = useState(0);
   const [pointerItem, setPointerItem] = useState({
     pointerShiftX: 0,
@@ -195,7 +194,7 @@ export const LineChart = (props: LineChartPropsType) => {
   const widthValue4 = useMemo(() => new Animated.Value(0), []);
   const widthValue5 = useMemo(() => new Animated.Value(0), []);
   const labelsExtraHeight = props.labelsExtraHeight || 0;
-
+  
   const animationDuration =
     props.animationDuration || LineDefaults.animationDuration;
   const onDataChangeAnimationDuration =
@@ -483,7 +482,10 @@ export const LineChart = (props: LineChartPropsType) => {
         ),
       ).start();
     }
+
   }, [animateOnDataChange, data, onDataChangeAnimationDuration]);
+  
+  
 
   const labelsAppear = useCallback(() => {
     opacValue.setValue(0);
@@ -1327,6 +1329,11 @@ export const LineChart = (props: LineChartPropsType) => {
     }
   }, [secondaryData, secondaryLineConfig]);
 
+  // useEffect(()=>{
+  //    setPointerX(24)
+
+  // },[])
+
   const gradientDirection = props.gradientDirection ?? 'vertical';
   const horizSections = [{value: '0'}];
   const stepHeight = props.stepHeight || containerHeight / noOfSections;
@@ -1449,13 +1456,6 @@ export const LineChart = (props: LineChartPropsType) => {
 
   const containerHeightIncludingBelowXAxis =
     extendedContainerHeight + noOfSectionsBelowXAxis * stepHeight;
-
-  const lineGradient = props.lineGradient ?? LineDefaults.lineGradient;
-  const lineGradientDirection = props.lineGradientDirection ?? 'vertical';
-  const lineGradientStartColor =
-    props.lineGradientStartColor ?? LineDefaults.lineGradientStartColor;
-  const lineGradientEndColor =
-    props.lineGradientEndColor ?? LineDefaults.lineGradientEndColor;
 
   const renderLabel = (
     index: number,
@@ -1644,7 +1644,6 @@ export const LineChart = (props: LineChartPropsType) => {
       const currentStripWidth = item.stripWidth ?? stripWidth;
       const currentStripOpacity = item.stripOpacity ?? stripOpacity;
       const currentStripColor = item.stripColor || stripColor;
-      const position = I18nManager.isRTL ? 'right' : 'left';
 
       return (
         <Fragment key={index}>
@@ -1705,9 +1704,7 @@ export const LineChart = (props: LineChartPropsType) => {
                       height: dataPointsHeight,
                       width: dataPointsWidth,
                       top: getYOrSecondaryY(item.value),
-                      [position]:
-                        initialSpacing - dataPointsWidth + spacing * index,
-                      transform: [{scaleX: I18nManager.isRTL ? -1 : 1}],
+                      left: initialSpacing - dataPointsWidth + spacing * index,
                     },
                   ]}>
                   {customDataPoint()}
@@ -1985,53 +1982,7 @@ export const LineChart = (props: LineChartPropsType) => {
       pointerConfig,
       pointerLabelComponent,
       secondaryPointerItem,
-      scrollX,
     });
-  };
-
-  const getLineGradientComponent = () => {
-    return props.lineGradientComponent ? (
-      props.lineGradientComponent()
-    ) : (
-      <LinearGradient
-        id="lineGradient"
-        x1="0"
-        y1="0"
-        x2={lineGradientDirection === 'horizontal' ? '1' : '0'}
-        y2={lineGradientDirection === 'vertical' ? '1' : '0'}>
-        <Stop offset="0" stopColor={lineGradientStartColor} />
-        <Stop offset="1" stopColor={lineGradientEndColor} />
-      </LinearGradient>
-    );
-  };
-
-  const getAreaGradientComponent = (
-    startFillColor: string,
-    endFillColor: string,
-    startOpacity: number,
-    endOpacity: number,
-  ) => {
-    return props.areaGradientComponent ? (
-      props.areaGradientComponent()
-    ) : (
-      <LinearGradient
-        id="Gradient"
-        x1="0"
-        y1="0"
-        x2={gradientDirection === 'horizontal' ? '1' : '0'}
-        y2={gradientDirection === 'vertical' ? '1' : '0'}>
-        <Stop
-          offset="0"
-          stopColor={startFillColor}
-          stopOpacity={startOpacity.toString()}
-        />
-        <Stop
-          offset="1"
-          stopColor={endFillColor}
-          stopOpacity={endOpacity.toString()}
-        />
-      </LinearGradient>
-    );
   };
 
   const lineSvgComponent = (
@@ -2052,7 +2003,6 @@ export const LineChart = (props: LineChartPropsType) => {
   ) => {
     return (
       <Svg>
-        {lineGradient && getLineGradientComponent()}
         {strokeDashArray &&
         strokeDashArray.length === 2 &&
         typeof strokeDashArray[0] === 'number' &&
@@ -2060,13 +2010,7 @@ export const LineChart = (props: LineChartPropsType) => {
           <Path
             d={points}
             fill="none"
-            stroke={
-              lineGradient
-                ? props.lineGradientId
-                  ? `url(#${props.lineGradientId})`
-                  : `url(#lineGradient)`
-                : color
-            }
+            stroke={color}
             strokeWidth={currentLineThickness || thickness}
             strokeDasharray={strokeDashArray}
           />
@@ -2074,34 +2018,36 @@ export const LineChart = (props: LineChartPropsType) => {
           <Path
             d={points}
             fill="none"
-            stroke={
-              lineGradient
-                ? props.lineGradientId
-                  ? `url(#${props.lineGradientId})`
-                  : `url(#lineGradient)`
-                : color
-            }
+            stroke={color}
             strokeWidth={currentLineThickness || thickness}
           />
         )}
 
         {/***********************      For Area Chart        ************/}
 
-        {atLeastOneAreaChart &&
-          getAreaGradientComponent(
-            startFillColor,
-            endFillColor,
-            startOpacity,
-            endOpacity,
-          )}
+        {atLeastOneAreaChart && (
+          <LinearGradient
+            id="Gradient"
+            x1="0"
+            y1="0"
+            x2={gradientDirection === 'horizontal' ? '1' : '0'}
+            y2={gradientDirection === 'vertical' ? '1' : '0'}>
+            <Stop
+              offset="0"
+              stopColor={startFillColor}
+              stopOpacity={startOpacity.toString()}
+            />
+            <Stop
+              offset="1"
+              stopColor={endFillColor}
+              stopOpacity={endOpacity.toString()}
+            />
+          </LinearGradient>
+        )}
         {atLeastOneAreaChart && (
           <Path
             d={fillPoints}
-            fill={
-              props.areaGradientId
-                ? `url(#${props.areaGradientId})`
-                : `url(#Gradient)`
-            }
+            fill="url(#Gradient)"
             stroke={'transparent'}
             strokeWidth={currentLineThickness || thickness}
           />
@@ -2467,7 +2413,6 @@ export const LineChart = (props: LineChartPropsType) => {
             (props.overflowBottom ?? dataPointsRadius1),
           width: totalWidth,
           zIndex: zIndex,
-          transform: [{scaleX: I18nManager.isRTL ? -1 : 1}],
         }}>
         {lineSvgComponent(
           points,
@@ -2732,7 +2677,6 @@ export const LineChart = (props: LineChartPropsType) => {
             (props.overflowBottom ?? dataPointsRadius1),
           width: animatedWidth,
           zIndex: zIndex,
-          transform: [{scaleX: I18nManager.isRTL ? -1 : 1}],
           // backgroundColor: 'wheat',
         }}>
         {lineSvgComponent(
@@ -2996,7 +2940,7 @@ export const LineChart = (props: LineChartPropsType) => {
                 arrowFillColor5,
               )
           : null}
-        {pointerX > 0 ? (
+        {pointerX >= 0 ? (
           <View
             pointerEvents="none"
             style={{
@@ -3016,7 +2960,7 @@ export const LineChart = (props: LineChartPropsType) => {
             {secondaryPoints ? renderPointer(6) : null}
             {stripOverPointer && renderStripAndLabel()}
           </View>
-        ) : null}
+       ) : null}
         {data.map((item: itemType, index: number) => {
           // console.log('item', item)
           return (
